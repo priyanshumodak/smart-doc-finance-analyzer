@@ -190,6 +190,8 @@ with left:
     st.text_area('OCR text',page.get('ocr_text',''),height=320,key=f"ocr-{result['id']}-{page_index}")
     st.caption('Detected type: '+page.get('document_type','unknown'))
 with right:
+    st.subheader('Review and correct')
+    st.caption('Double-click a cell in the value column below to edit it. Check item rows too, then click Save corrections and revalidate. Review required is the validation status.')
     fields = [{'field':key,'value':data.get('value') or '', 'confidence':data.get('confidence'),
                'source':data.get('source','unknown')} for key,data in page['fields'].items()
               if page.get('document_type') not in ('bank_statement','financial_report') or data.get('value') is not None]

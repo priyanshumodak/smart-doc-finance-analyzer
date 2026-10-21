@@ -97,3 +97,19 @@ Do not start the separate backend for this mode. The existing `scripts/start.ps1
 The existing backend suite (44 tests) and HTTP-backed dashboard suite (four tests) pass. Two additional rendered Cloud tests run the root entrypoint with real digital-PDF extraction and real scanned-image OCR: **50 tests total**. Cloud tests cover session isolation, sample analysis, Excel preparation and clearing documents while network backend calls are explicitly forbidden. A separate standalone adapter regression covers upload guards, correction/revalidation, preview bytes and nine-sheet Excel export.
 
 The exact root Python requirements were installed in a fresh Python 3.11 environment with neither Torch nor Transformers installed. `pip check` passes. Compatible Arrow and character-encoding dependencies are pinned to prevent fresh-install issues discovered during this check. Linux package installation and hosted HTTPS behavior still need the deployment/CI check; no public Streamlit URL has been created locally.
+
+## Local 500 error after updating
+
+If you kept the older two-service app running during an update, its backend can still have the old storage code in memory. The error `table documents has 6 columns but 5 values were supplied` identifies that stale process. Stop it with `powershell -ExecutionPolicy Bypass -File scripts/stop.ps1`, then restart the current app. Do not delete the database to fix this.
+
+For a fresh local Streamlit-only environment, run from the repository root:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+Tesseract and Poppler must also be installed locally; `packages.txt` installs them automatically only on Community Cloud. Existing Windows setup is covered in the installation guide. Open http://localhost:8501 after starting.
+
+**Review required** is a status, not a button. Analyze or open a document first, then find **Review and correct** beside its source preview (scroll further down on narrow screens). Double-click the **value** cells to edit, check item rows, and click **Save corrections and revalidate** at the bottom of the form. You may save an unchanged form to record that you checked it; unresolved mismatches still require review.

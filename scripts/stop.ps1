@@ -10,6 +10,7 @@ function Stop-ServiceTree([int]$ProcessId) {
 }
 foreach ($service in @('backend','frontend')) {
     $processId=$state.$service
+    if (-not $processId) { continue }
     $process=Get-CimInstance Win32_Process -Filter "ProcessId=$processId" -ErrorAction SilentlyContinue
     if ($process -and ($process.ExecutablePath -like "$projectRoot\*" -or $process.CommandLine -like "*$projectRoot*")) {
         Stop-ServiceTree -ProcessId $processId
