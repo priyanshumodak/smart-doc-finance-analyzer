@@ -1,0 +1,5 @@
+accelerate==0.32.1
+seqeval==1.2.2
+# Only needed for optional Hugging Face dataset adapters.
+datasets==2.20.0
+pyarrow==17.0.0

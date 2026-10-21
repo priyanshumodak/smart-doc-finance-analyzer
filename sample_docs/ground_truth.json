@@ -1,0 +1,113 @@
+[
+  {
+    "invoice_number": "INV-202600001",
+    "invoice_date": "28/06/2026",
+    "due_date": "13/07/2026",
+    "vendor_name": "Sunrise Furniture Works",
+    "bill_to": "Ganesh Enterprises",
+    "place_of_supply": "Mumbai, Maharashtra",
+    "gstin": "27TGDCT5500H1Z6",
+    "pan": "POSSK4287F",
+    "gst_rate_pct": 28,
+    "line_items": [
+      {
+        "item": "HDMI Cable 2m",
+        "qty": 5,
+        "rate": 904.08,
+        "amount": 4520.4
+      },
+      {
+        "item": "Fertilizer Bag 25kg",
+        "qty": 6,
+        "rate": 645.72,
+        "amount": 3874.32
+      },
+      {
+        "item": "Steel Water Bottle",
+        "qty": 2,
+        "rate": 1891.05,
+        "amount": 3782.1
+      },
+      {
+        "item": "HDMI Cable 2m",
+        "qty": 10,
+        "rate": 1432.93,
+        "amount": 14329.3
+      },
+      {
+        "item": "Laptop Stand",
+        "qty": 8,
+        "rate": 2750.71,
+        "amount": 22005.68
+      }
+    ],
+    "subtotal": 48511.8,
+    "tax_amount": 13583.3,
+    "total_amount": 62095.1,
+    "image_path": "/tmp/test_invoices/images/invoice_00001.png"
+  },
+  {
+    "invoice_number": "INV-202600002",
+    "invoice_date": "13/02/2026",
+    "due_date": "28/02/2026",
+    "vendor_name": "Ganesh Enterprises",
+    "bill_to": "Nirmal Agro Foods",
+    "place_of_supply": "Delhi, Delhi",
+    "gstin": "07VQWPS0220H1ZG",
+    "pan": "JLVEJ6760U",
+    "gst_rate_pct": 5,
+    "line_items": [
+      {
+        "item": "A4 Paper Ream",
+        "qty": 8,
+        "rate": 1990.36,
+        "amount": 15922.88
+      },
+      {
+        "item": "Cotton Fabric (per meter)",
+        "qty": 9,
+        "rate": 1215.13,
+        "amount": 10936.17
+      },
+      {
+        "item": "HDMI Cable 2m",
+        "qty": 1,
+        "rate": 1260.88,
+        "amount": 1260.88
+      }
+    ],
+    "subtotal": 28119.93,
+    "tax_amount": 1406.0,
+    "total_amount": 29525.93,
+    "image_path": "/tmp/test_invoices/images/invoice_00002.png"
+  },
+  {
+    "invoice_number": "INV-202600003",
+    "invoice_date": "13/01/2026",
+    "due_date": "28/01/2026",
+    "vendor_name": "Kaveri Electronics",
+    "bill_to": "Mahalaxmi Hardware Mart",
+    "place_of_supply": "Delhi, Delhi",
+    "gstin": "07BXOSF4861E1ZP",
+    "pan": "TOTLP3914Y",
+    "gst_rate_pct": 28,
+    "line_items": [
+      {
+        "item": "A4 Paper Ream",
+        "qty": 3,
+        "rate": 3991.58,
+        "amount": 11974.74
+      },
+      {
+        "item": "Steel Water Bottle",
+        "qty": 10,
+        "rate": 458.11,
+        "amount": 4581.1
+      }
+    ],
+    "subtotal": 16555.84,
+    "tax_amount": 4635.64,
+    "total_amount": 21191.48,
+    "image_path": "/tmp/test_invoices/images/invoice_00003.png"
+  }
+]
