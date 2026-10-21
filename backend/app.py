@@ -11,7 +11,7 @@ from threading import Semaphore
 from typing import Any
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response,FileResponse
+from fastapi.responses import Response,FileResponse,JSONResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 import pytesseract
@@ -46,6 +46,9 @@ except ImportError:
 
 @asynccontextmanager
 async def lifespan(application):
+    # Complete the legacy owner-column migration before concurrent requests.
+    with storage.connect():
+        pass
     # Initialize native CUDA libraries on the server's main startup thread.
     # Upload processing later runs in Starlette's worker pool.
     if os.getenv('TOKEN_MODEL_PATH') and os.getenv('EXTRACTION_MODE','auto')!='ocr':
@@ -58,6 +61,27 @@ async def lifespan(application):
 app = FastAPI(title='Smart Document and Finance Analyzer',version='2.1.0',lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=os.getenv('CORS_ORIGINS','http://localhost:8501').split(','),
                    allow_methods=['GET','POST','PATCH'],allow_headers=['Content-Type'])
+@app.middleware('http')
+async def visitor_scope(request, call_next):
+    public = os.getenv('PUBLIC_DEMO_MODE','0') == '1'
+    identity = 'local'
+    if public and request.url.path != '/health':
+        import re
+        identity = request.headers.get('X-Visitor-Session','')
+        if not re.fullmatch(r'[a-f0-9]{64}', identity):
+            return JSONResponse({'detail':'A valid visitor session is required'}, status_code=401)
+        if 'approve-training' in request.url.path or request.url.path == '/training-reviews':
+            return JSONResponse({'detail':'Training collection is disabled on the public demo'}, status_code=403)
+    token = storage.visitor.set(identity)
+    try:
+        return await call_next(request)
+    finally:
+        storage.visitor.reset(token)
+
+@app.delete('/documents')
+def clear_documents():
+    return {'deleted':storage.clear_visitor()}
+
 MAX_BYTES = int(os.getenv('MAX_UPLOAD_MB','20')) * 1024 * 1024
 pipeline_lock = Semaphore(1)
 

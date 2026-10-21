@@ -95,3 +95,7 @@ After live verification, `artifacts/DEMO_OUTPUT.xlsx` and `artifacts/DEMO_OUTPUT
 ```
 
 The first command reports saved state and service health without starting training. The next two make real demo uploads and create saved history records. For regression tests, run `scripts/verify_tests.py` with the backend Python. Read `reports/UPGRADE_RESULTS.md` for measured results and their scope.
+
+## Deploy a website visitors can use
+
+Read the [full public deployment walkthrough](DEPLOYMENT_WALKTHROUGH.md). It covers one-click samples, visitor uploads, expected outputs, corrections, Excel downloads, Render hosting and a two-browser acceptance check.

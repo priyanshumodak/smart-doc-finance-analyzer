@@ -1,4 +1,8 @@
 """SQLite history with atomic writes and parameterised filtering."""
+from contextvars import ContextVar
+
+visitor = ContextVar("visitor", default="local")
+
 import json
 import os
 import sqlite3
@@ -12,6 +16,9 @@ def connect():
     connection = sqlite3.connect(path, timeout=20)
     connection.row_factory = sqlite3.Row
     connection.execute('CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, filename TEXT, created_at TEXT, status TEXT, result TEXT)')
+    columns = {row[1] for row in connection.execute('PRAGMA table_info(documents)')}
+    if 'owner' not in columns:
+        connection.execute("ALTER TABLE documents ADD COLUMN owner TEXT NOT NULL DEFAULT 'local'")
     try:
         with connection:
             yield connection
@@ -20,18 +27,18 @@ def connect():
 
 def save(result):
     with connect() as db:
-        db.execute('INSERT OR REPLACE INTO documents VALUES (?,?,?,?,?)',
-                   (result['id'],result['filename'],result['created_at'],result['status'],json.dumps(result,ensure_ascii=False)))
+        db.execute('INSERT OR REPLACE INTO documents (id,filename,created_at,status,result,owner) VALUES (?,?,?,?,?,?)',
+                   (result['id'],result['filename'],result['created_at'],result['status'],json.dumps(result,ensure_ascii=False),visitor.get()))
 
 def get(document_id):
     with connect() as db:
-        row = db.execute('SELECT result FROM documents WHERE id=?', (document_id,)).fetchone()
+        row = db.execute('SELECT result FROM documents WHERE id=? AND owner=?', (document_id,visitor.get())).fetchone()
     return json.loads(row['result']) if row else None
 
 def listing(query='', limit=50, offset=0):
     with connect() as db:
-        rows = db.execute('SELECT id,filename,created_at,status FROM documents WHERE filename LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-                          ('%'+query+'%',limit,offset)).fetchall()
+        rows = db.execute('SELECT id,filename,created_at,status FROM documents WHERE filename LIKE ? AND owner=? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+                          ('%'+query+'%',visitor.get(),limit,offset)).fetchall()
     return [dict(row) for row in rows]
 
 
@@ -68,3 +75,15 @@ def invalidate_training_review(document_id,page):
     with connect() as db:
         db.execute('CREATE TABLE IF NOT EXISTS training_reviews (document_id TEXT, page INTEGER, record TEXT, PRIMARY KEY(document_id,page))')
         db.execute('DELETE FROM training_reviews WHERE document_id=? AND page=?',(document_id,page))
+
+
+def clear_visitor():
+    import shutil
+    with connect() as db:
+        ids = [row['id'] for row in db.execute('SELECT id FROM documents WHERE owner=?', (visitor.get(),))]
+        for identity in ids:
+            shutil.rmtree(preview_path(identity,1).parent, ignore_errors=True)
+            db.execute('CREATE TABLE IF NOT EXISTS training_reviews (document_id TEXT, page INTEGER, record TEXT, PRIMARY KEY(document_id,page))')
+            db.execute('DELETE FROM training_reviews WHERE document_id=?', (identity,))
+        db.execute('DELETE FROM documents WHERE owner=?', (visitor.get(),))
+    return len(ids)

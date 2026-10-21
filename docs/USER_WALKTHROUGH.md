@@ -75,3 +75,5 @@ Use sidebar filename search and **Open saved document** to reopen a result. The 
 ## Which mode should I demonstrate?
 
 Use OCR mode for the main working demonstration: validation selected it for higher final-field quality. To demonstrate the trained component, stop the app and start `scripts/start.ps1 -Mode token -UseGpu`, upload a demo, and expand **Full validation and extraction provenance**. The token-model diagnostics show checkpoint, device, executed status and accepted fields. Model mode can produce more review flags; do not present its BIO entity score as final-field accuracy. Stop/restart in OCR mode afterward for the recommended workflow.
+
+For the hosted visitor workflow and deployment checklist, see [the public deployment walkthrough](DEPLOYMENT_WALKTHROUGH.md).

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: finance-document-studio
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: PUBLIC_DEMO_MODE
+        value: "1"
+      - key: EXTRACTION_MODE
+        value: ocr
+      - key: MAX_UPLOAD_MB
+        value: "10"
+      - key: MAX_PAGES
+        value: "5"

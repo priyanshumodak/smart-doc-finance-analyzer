@@ -43,3 +43,26 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Rendered dashboard regressions
         run: python -m unittest discover -s frontend/tests -v
+
+  public-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build complete public website image
+        run: docker build -t finance-public .
+      - name: Verify both services become ready
+        run: |
+          docker run -d --name finance-public -p 8501:8501 finance-public
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8501/_stcore/health; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then docker logs finance-public; exit 1; fi
+          docker exec finance-public python -c "import json,urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/health'))['ocr_available']"
+      - name: Container logs and cleanup
+        if: always()
+        run: |
+          docker logs finance-public || true
+          docker rm -f finance-public || true

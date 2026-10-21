@@ -2,6 +2,8 @@
 import io
 import json
 import os
+import secrets
+from pathlib import Path
 import requests
 import pandas as pd
 import streamlit as st
@@ -12,7 +14,12 @@ st.set_page_config(page_title='Finance Document Studio',page_icon='📄',layout=
 st.title('Finance Document Studio')
 st.caption('Upload financial scans, inspect extraction evidence, correct fields and reconcile amounts.')
 
+PUBLIC = os.getenv('PUBLIC_DEMO_MODE','0') == '1'
+if 'visitor_session' not in st.session_state:
+    st.session_state.visitor_session = secrets.token_hex(32)
+
 def api(method,path,**kwargs):
+    kwargs.setdefault('headers',{})['X-Visitor-Session'] = st.session_state.visitor_session
     response = requests.request(method,BACKEND+path,timeout=kwargs.pop('timeout',300),**kwargs)
     if not response.ok:
         try:
@@ -49,7 +56,51 @@ with st.sidebar:
             st.session_state.pop('preview',None)
     except (requests.RequestException,RuntimeError) as exc:
         st.caption(f'History unavailable: {exc}')
+    if PUBLIC:
+        st.caption('History belongs to this browser session. A new session cannot recover it.')
+        if st.button('Clear my documents'):
+            try:
+                api('DELETE','/documents')
+                for key in ('result','preview','batch','excel'):
+                    st.session_state.pop(key,None)
+                st.rerun()
+            except (requests.RequestException,RuntimeError) as exc:
+                st.error(str(exc))
     st.caption('Team: Priyanshu Modak · Vishesh Dokania · Parth Zanwar')
+
+with st.expander('Start here: a complete walkthrough',expanded=not bool(st.session_state.get('result'))):
+    st.markdown("""1. **Try a fictional sample** below, or upload your own PDF, PNG, JPEG or TIFF.
+2. Click **Analyze documents** for uploaded files and wait for processing.
+3. Inspect the source preview, select a page and highlight a field to check its evidence.
+4. Compare extracted fields and table rows with the original. Edit mistakes and click **Save corrections and revalidate**.
+5. Read the reconciliation checks. Review required means evidence is missing, inconsistent or uncertain; a passed check is not a guarantee of accuracy.
+6. Download JSON, or click **Prepare Excel download** then **Download Excel**. Use the sidebar to reopen results during this session.""")
+    if PUBLIC:
+        st.info('Public demonstration: use fictional or redacted documents. Extracted text and page previews are stored on this server until you clear them or the deployment storage is reset. Closing the tab does not delete them. Uploads are not collected for training. Download your results before leaving.')
+    st.caption('Prefer clear, upright scans. Hosted demo limits: '+os.getenv('MAX_UPLOAD_MB','20')+' MB per file and '+os.getenv('MAX_PAGES','20')+' pages. Documents are processed one at a time; retry if the server is busy.')
+
+sample_root = Path(__file__).resolve().parents[1]/'sample_docs'
+samples = {'Digital invoice (fastest)': 'demo_digital_invoice.pdf',
+           'Scanned invoice (OCR)': 'demo_invoice.png',
+           'Continued invoice (two pages)': 'demo_continued_invoice.pdf',
+           'Bank statement': 'demo_bank_statement.png',
+           'Financial report': 'demo_financial_report.pdf'}
+available = {label:name for label,name in samples.items() if (sample_root/name).is_file()}
+if available:
+    with st.expander('Try a sample without uploading a file',expanded=not bool(st.session_state.get('result'))):
+        label = st.selectbox('Fictional sample',list(available))
+        sample = sample_root/available[label]
+        st.download_button('Download this sample',sample.read_bytes(),file_name=sample.name)
+        if st.button('Analyze this sample',type='primary'):
+            try:
+                with st.spinner('Analyzing the fictional sample...'):
+                    st.session_state.result = api('POST','/extract',files={'file':(sample.name,sample.read_bytes())}).json()
+                    st.session_state.pop('preview',None)
+                    st.session_state.pop('batch',None)
+                st.rerun()
+            except (requests.RequestException,RuntimeError,ValueError) as exc:
+                st.error(str(exc))
+        st.caption('Digital invoice expected: subtotal 100, tax 18, total 118. Continued invoice expected: two pages, two merged rows, total 354. Scans can need corrections.')
 
 uploads = st.file_uploader('Upload PDF, image or multipage TIFF',type=['pdf','png','jpg','jpeg','tif','tiff'],accept_multiple_files=True)
 if st.button('Analyze documents',type='primary',disabled=not uploads):
@@ -111,7 +162,6 @@ with left:
     show_layout=st.checkbox('Show all word boxes',key=f"layout-{result['id']}-{page_index}")
     if page.get('preview_available'):
         try:
-            @st.cache_data(ttl=600,show_spinner=False)
             def load_preview(document_id,number):
                 return api('GET',f'/documents/{document_id}/pages/{number}/preview',timeout=30).content
             image=Image.open(io.BytesIO(load_preview(result['id'],page_index+1))).convert('RGB')
@@ -185,7 +235,7 @@ with right:
     with st.expander('Full validation and extraction provenance'):
         st.json({'validation':validation,'fields':page['fields'],'extraction_diagnostics':page.get('extraction_diagnostics',{})})
 
-if page.get('document_type') in ('invoice','receipt','unknown'):
+if not PUBLIC and page.get('document_type') in ('invoice','receipt','unknown'):
     with st.expander('Save a reviewed training example'):
         st.caption('Only explicitly reviewed pages are exported. Unmatched corrected text remains pending token annotation; reserved evaluation invoices are blocked.')
         confirmed=st.checkbox('I checked this page against its source',key=f"training-confirm-{result['id']}-{page_index}")
