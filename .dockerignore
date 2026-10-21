@@ -19,3 +19,5 @@ uploads
 .codex
 .agents
 *.zip
+
+**/secrets.toml

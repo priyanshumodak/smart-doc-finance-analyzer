@@ -20,7 +20,11 @@ if 'visitor_session' not in st.session_state:
 
 def api(method,path,**kwargs):
     kwargs.setdefault('headers',{})['X-Visitor-Session'] = st.session_state.visitor_session
-    response = requests.request(method,BACKEND+path,timeout=kwargs.pop('timeout',300),**kwargs)
+    if os.getenv('APP_RUNTIME') == 'standalone':
+        from backend.standalone import request
+        response = request(method,path,**kwargs)
+    else:
+        response = requests.request(method,BACKEND+path,timeout=kwargs.pop('timeout',300),**kwargs)
     if not response.ok:
         try:
             message = response.json().get('detail',response.text)
@@ -77,7 +81,8 @@ with st.expander('Start here: a complete walkthrough',expanded=not bool(st.sessi
 6. Download JSON, or click **Prepare Excel download** then **Download Excel**. Use the sidebar to reopen results during this session.""")
     if PUBLIC:
         st.info('Public demonstration: use fictional or redacted documents. Extracted text and page previews are stored on this server until you clear them or the deployment storage is reset. Closing the tab does not delete them. Uploads are not collected for training. Download your results before leaving.')
-    st.caption('Prefer clear, upright scans. Hosted demo limits: '+os.getenv('MAX_UPLOAD_MB','20')+' MB per file and '+os.getenv('MAX_PAGES','20')+' pages. Documents are processed one at a time; retry if the server is busy.')
+    upload_limit = min(int(os.getenv('MAX_UPLOAD_MB','20')),st.get_option('server.maxUploadSize'))
+    st.caption('Prefer clear, upright scans. Upload limits: '+str(upload_limit)+' MB per file and '+os.getenv('MAX_PAGES','20')+' pages. Documents are processed one at a time; retry if the server is busy.')
 
 sample_root = Path(__file__).resolve().parents[1]/'sample_docs'
 samples = {'Digital invoice (fastest)': 'demo_digital_invoice.pdf',

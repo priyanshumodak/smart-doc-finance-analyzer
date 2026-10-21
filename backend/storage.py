@@ -1,4 +1,8 @@
 """SQLite history with atomic writes and parameterised filtering."""
+from threading import Lock
+
+_schema_lock = Lock()
+
 from contextvars import ContextVar
 
 visitor = ContextVar("visitor", default="local")
@@ -15,10 +19,11 @@ def connect():
     path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(path, timeout=20)
     connection.row_factory = sqlite3.Row
-    connection.execute('CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, filename TEXT, created_at TEXT, status TEXT, result TEXT)')
-    columns = {row[1] for row in connection.execute('PRAGMA table_info(documents)')}
-    if 'owner' not in columns:
-        connection.execute("ALTER TABLE documents ADD COLUMN owner TEXT NOT NULL DEFAULT 'local'")
+    with _schema_lock:
+        connection.execute('CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, filename TEXT, created_at TEXT, status TEXT, result TEXT)')
+        columns = {row[1] for row in connection.execute('PRAGMA table_info(documents)')}
+        if 'owner' not in columns:
+            connection.execute("ALTER TABLE documents ADD COLUMN owner TEXT NOT NULL DEFAULT 'local'")
     try:
         with connection:
             yield connection

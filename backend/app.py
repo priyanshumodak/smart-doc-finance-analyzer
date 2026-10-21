@@ -188,17 +188,20 @@ def process(raw, filename):
     finally:
         pipeline_lock.release()
 
-async def read_upload(file):
-    filename = Path((file.filename or '').replace('\\','/')).name
+def validate_upload(raw, filename):
+    filename = Path((filename or '').replace('\\','/')).name
     if Path(filename).suffix.lower() not in {'.pdf','.png','.jpg','.jpeg','.tif','.tiff'}:
         raise HTTPException(400,'Upload PDF, PNG, JPEG or TIFF.')
-    raw = await file.read(MAX_BYTES + 1)
-    await file.close()
     if not raw:
         raise HTTPException(400,'The uploaded file is empty.')
     if len(raw)>MAX_BYTES:
         raise HTTPException(413,'Document exceeds upload size limit.')
     return raw,filename
+
+async def read_upload(file):
+    raw = await file.read(MAX_BYTES + 1)
+    await file.close()
+    return validate_upload(raw,file.filename)
 
 @app.post('/extract')
 async def extract(file:UploadFile=File(...)):

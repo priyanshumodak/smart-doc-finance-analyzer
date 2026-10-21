@@ -111,3 +111,6 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# Streamlit Cloud secrets are configured in the hosting dashboard
+.streamlit/secrets.toml

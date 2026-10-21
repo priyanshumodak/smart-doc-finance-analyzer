@@ -2,3 +2,6 @@ streamlit==1.37.0
 requests==2.32.3
 pandas==2.2.2
 openpyxl==3.1.5
+
+# Keep Arrow compatible with the project NumPy 1.26 baseline.
+pyarrow==25.0.1

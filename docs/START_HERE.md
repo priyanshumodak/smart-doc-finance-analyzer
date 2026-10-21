@@ -99,3 +99,5 @@ The first command reports saved state and service health without starting traini
 ## Deploy a website visitors can use
 
 Read the [full public deployment walkthrough](DEPLOYMENT_WALKTHROUGH.md). It covers one-click samples, visitor uploads, expected outputs, corrections, Excel downloads, Render hosting and a two-browser acceptance check.
+
+For a single-service Streamlit deployment, follow [Streamlit Community Cloud setup](STREAMLIT_CLOUD.md), select root `streamlit_app.py` and Python 3.11.

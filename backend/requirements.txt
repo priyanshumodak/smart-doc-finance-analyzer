@@ -14,3 +14,6 @@ pydantic==2.8.2
 
 pdfplumber==0.11.4
 pypdfium2>=4.30,<5
+
+# Requests 2.32.x supports chardet versions below 6.
+chardet>=3,<6

@@ -2,6 +2,8 @@
 
 This guide deploys the complete Python application: a Streamlit website, an internal FastAPI extraction service, Tesseract OCR, PDF support and fictional demonstration files. Visitors need only a browser; they do not install Python, train a model or supply an API key. The public container uses the measured recommended OCR mode and does not download neural model weights.
 
+For Streamlit Community Cloud hosting without a separate backend, use [the Streamlit Cloud guide](STREAMLIT_CLOUD.md). The Docker/Render instructions below remain an alternative.
+
 ## 1. Try the complete workflow locally
 
 For the existing Windows installation:
@@ -16,7 +18,7 @@ Open http://127.0.0.1:8501. If it is already running, stop it with `scripts/stop
 2. Under **Try a sample without uploading a file**, select **Digital invoice (fastest)** and click **Analyze this sample**. This runs the actual extraction pipeline, not a precomputed result.
 3. Expect invoice `DEMO-DIGITAL-2026`, subtotal **100**, tax **18**, total **118** and one item. Check the source preview against the extracted values.
 4. Use **Highlight a field** to see its evidence on the page. Expand OCR text or extraction provenance for inspection. Digital PDF text can bypass OCR; image scans run OCR.
-5. In the correction form, change total to `119`, then **Save corrections and revalidate**. The amount mismatch should require review. Restore `118` and save again. Inspect the validation checks rather than treating the status as an accuracy guarantee.
+5. In the correction form, change total to `130`, then **Save corrections and revalidate**. The amount mismatch should require review (the default amount tolerance is 1 currency unit). Restore `118` and save again. Inspect the validation checks rather than treating the status as an accuracy guarantee.
 6. Click **Download JSON**. Click **Prepare Excel download**, then **Download Excel**. The workbook contains Fields, Line Items, Validation, Provenance, Transactions, Financial Metrics, Spatial Relations, Document Summary and Merged Line Items sheets.
 7. Try **Continued invoice (two pages)**: switch between pages and expand combined results. Expect two merged item rows and total **354**.
 8. Try the scanned invoice to demonstrate OCR, the bank statement for transaction/balance checks, and the financial report for metrics. Recognition and supported fields vary by document; review uncertain results.

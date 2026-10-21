@@ -86,3 +86,9 @@ The app is intended for trusted local academic use and has no authentication. Pe
 Visitors can now try fictional samples inside the app, upload supported documents, inspect evidence, correct fields and download JSON/Excel. The root Docker image runs the website with a private extraction API, isolated visitor histories and public training collection disabled.
 
 Follow the [complete deployment and visitor walkthrough](docs/DEPLOYMENT_WALKTHROUGH.md) for local Docker, Render hosting, expected sample outputs, professor demonstration steps, privacy/storage behavior and the acceptance checklist. A browser is all visitors need once the server is deployed.
+
+## Deploy on Streamlit Community Cloud
+
+Use the root **`streamlit_app.py`** entrypoint with **Python 3.11**. This runs the complete OCR pipeline inside Streamlit, without a separate backend server or model download. Upload, samples, corrections, revalidation and downloads remain available with isolated visitor histories.
+
+See [exact Streamlit Cloud deployment steps](docs/STREAMLIT_CLOUD.md). Root `requirements.txt`, `packages.txt` and `.streamlit/config.toml` provide the cloud dependencies and five-megabyte upload limit.
