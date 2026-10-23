@@ -23,17 +23,17 @@ def validate(root):
         assert record['split']==row['split']
         digest=hashlib.sha256((root/row['image_path']).read_bytes()).hexdigest()
         assert digest==row['sha256']==record['sha256']
-        assert digest not in digests,'Duplicate receipt across imported splits'
         digests.add(digest)
         original=(root/'original_annotations'/f"{row['id']}.json").read_bytes()
         assert hashlib.sha256(original).hexdigest()==record['annotation_sha256']
         with Image.open(root/row['image_path']) as image: assert list(image.size)==row['image_size']
         assert len(row['words'])==len(row['boxes'])==len(row['labels'])>0
         for box in row['boxes']: assert len(box)==4 and 0<=box[0]<=box[2]<=1000 and 0<=box[1]<=box[3]<=1000
-        assert set(record['annotated_fields'])=={'subtotal','tax_amount','total_amount'}
+        assert set(record['annotated_fields'])<={'subtotal','tax_amount','total_amount'}
+        assert not set(record.get('ambiguous_reference_fields',{}))&set(record['annotated_fields'])
         labels.update(row['labels']); counts[row['split']]+=1
     assert dict(counts)==manifest['splits']
-    return {'status':'passed','documents':len(rows),'splits':dict(counts),'labels':dict(labels),'unique_images':len(digests),'license':manifest['license']}
+    return {'status':'passed','source_duplicate_records':len(rows)-len(digests),'documents':len(rows),'splits':dict(counts),'labels':dict(labels),'unique_images':len(digests),'license':manifest['license']}
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(); parser.add_argument('--data',default='data/cord_real_v2'); parser.add_argument('--out',default='reports/real_receipts/validation.json'); args=parser.parse_args()

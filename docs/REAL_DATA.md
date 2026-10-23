@@ -97,4 +97,8 @@ Import the full release, inspect label coverage, train on the full official trai
 
 On the same 20 held-out receipts and 40 annotated values, OCR/rules field F1 was **28.00%** (7 TP, 3 FP, 33 FN). OCR plus the pilot model scored **23.73%** (7 TP, 12 FP, 33 FN). Both had **17.5% field accuracy**. Every document required review. The small pilot added false positives and is **not promoted** to the website. The website continues to use OCR/rules. Further model selection must use validation, not optimize these published test results.
 
-All **54 regressions pass**: 47 backend/data tests, four original dashboard tests and three Cloud entrypoint tests, including actual real-receipt OCR and a check that published reference answers are not passed to extraction.
+Historical pilot verification: **54 regressions passed**: 47 backend/data tests, four original dashboard tests and three Cloud entrypoint tests, including actual real-receipt OCR and a check that published reference answers are not passed to extraction.
+
+## Updated Indonesian extraction
+
+The small pilot above is historical. The latest pipeline uses the full real release, duplicate-protected training, stronger OCR and original-language extraction. See [the Indonesian extraction guide](INDONESIAN_EXTRACTION.md) for the deployed configuration and its separate test results.

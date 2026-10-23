@@ -19,7 +19,7 @@ def excel_bytes(result):
         metrics.extend({'page':number, **row} for row in page.get('financial_metrics',[]))
         relations.extend({'page':number, **row} for row in page.get('relations',[]))
         checks.extend({'page':number, **row} for row in page.get('balance_checks',[]))
-        row = {'page': number, 'status': page['validation']['status']}
+        row = {'page': number, 'status': page['validation']['status'],'currency':page.get('currency'),'locale':page.get('locale')}
         for name, data in page['fields'].items():
             row[name] = data.get('value')
             evidence.append({'page': number, 'field': name, **data})

@@ -11,3 +11,5 @@ Model and dataset terms are separate from the application's source. This reposit
 No blanket open-source license has been assigned to the team's original application code in this preparation step. The project owners can add their chosen source license separately; third-party model/data terms still apply.
 
 Three real CORD-v2 training-split receipt JPEG derivatives are redistributed under CC-BY-4.0 in `sample_docs/real_receipts`; attribution, license text, source indices and hashes are included there. Copyright and dataset attribution remain with the original authors/Clova AI/NAVER.
+
+The Indonesian receipt pipeline uses RapidOCR/PP-OCRv6 and ONNX Runtime from installed packages. RapidOCR and PaddleOCR publish Apache-2.0 licenses; retain their packaged licenses/notices. Sources: https://github.com/RapidAI/RapidOCR and https://github.com/PaddlePaddle/PaddleOCR . The compact receipt-line classifier is trained from CORD-v2 (CC-BY-4.0); see its card under `backend/assets`. No original upstream neural weights are copied into this Git repository.

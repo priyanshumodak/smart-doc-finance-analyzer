@@ -3,7 +3,7 @@ FROM python:3.11-slim
 # System deps: Tesseract (+ Hindi language pack for Indian docs) and poppler for PDF->image
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
-    tesseract-ocr-hin \
+    tesseract-ocr-hin tesseract-ocr-ind \
     poppler-utils \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*

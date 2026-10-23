@@ -27,7 +27,8 @@ def request(method, path, **kwargs):
             if not upload or len(upload)<2 or not isinstance(upload[1],bytes):
                 raise HTTPException(400,'Select a document to upload')
             raw,filename = app.validate_upload(upload[1],upload[0])
-            value = app.process(raw,filename)
+            locale=kwargs.get('data',{}).get('locale','auto')
+            value = app.process(raw,filename) if locale=='auto' else app.process(raw,filename,locale)
         elif method == 'GET' and path == '/documents':
             params = kwargs.get('params',{})
             value = app.documents(q=str(params.get('q','')),limit=50,offset=0)

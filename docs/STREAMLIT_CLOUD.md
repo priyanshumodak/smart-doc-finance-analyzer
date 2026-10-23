@@ -1,6 +1,6 @@
 # Deploy the complete app on Streamlit Community Cloud
 
-This deployment runs everything inside one Streamlit application. It directly reuses the extraction, OCR, correction, reconciliation, storage and export functions. There is no separate FastAPI server, Render service, Docker installation, model download or API key required. FastAPI remains an installed Python dependency because the shared functions use its validation/response types; no HTTP server is started.
+This deployment runs everything inside one Streamlit application. It directly reuses the extraction, OCR, correction, reconciliation, storage and export functions. There is no separate FastAPI server, Render service, Docker installation, separate LayoutLM download or API key required. Compact neural OCR models arrive with the pinned package installation. FastAPI remains an installed Python dependency because the shared functions use its validation/response types; no HTTP server is started.
 
 ## 1. Push the Streamlit deployment changes
 
@@ -94,9 +94,9 @@ Do not start the separate backend for this mode. The existing `scripts/start.ps1
 
 ## Local verification
 
-The existing backend suite (44 tests) and HTTP-backed dashboard suite (four tests) pass. Two additional rendered Cloud tests run the root entrypoint with real digital-PDF extraction and real scanned-image OCR: **50 tests total**. Cloud tests cover session isolation, sample analysis, Excel preparation and clearing documents while network backend calls are explicitly forbidden. A separate standalone adapter regression covers upload guards, correction/revalidation, preview bytes and nine-sheet Excel export.
+The updated project passes 66 regressions: 59 backend/data tests, four HTTP-backed dashboard tests and three rendered Cloud entrypoint tests. The real-receipt test checks the actual neural engine and the known real-image total, while prohibiting external API calls. It also verifies that reference labels never enter extraction.
 
-The exact root Python requirements were installed in a fresh Python 3.11 environment with neither Torch nor Transformers installed. `pip check` passes. Compatible Arrow and character-encoding dependencies are pinned to prevent fresh-install issues discovered during this check. Linux package installation and hosted HTTPS behavior still need the deployment/CI check; no public Streamlit URL has been created locally.
+The root Python environment uses no Torch or Transformers at inference; `pip check` passes. RapidOCR and ONNX Runtime are pinned to tested CPU versions. The live site is https://smart-doc-finance-analyzer-p5ekraetyvhbhjr5o2ween.streamlit.app/ . Latest model, evaluation scope and deployment checks are documented in [the Indonesian receipt guide](INDONESIAN_EXTRACTION.md).
 
 ## Local 500 error after updating
 
@@ -113,3 +113,7 @@ py -3.11 -m venv .venv
 Tesseract and Poppler must also be installed locally; `packages.txt` installs them automatically only on Community Cloud. Existing Windows setup is covered in the installation guide. Open http://localhost:8501 after starting.
 
 **Review required** is a status, not a button. Analyze or open a document first, then find **Review and correct** beside its source preview (scroll further down on narrow screens). Double-click the **value** cells to edit, check item rows, and click **Save corrections and revalidate** at the bottom of the form. You may save an unchanged form to record that you checked it; unresolved mismatches still require review.
+
+## Indonesian receipt profile
+
+After deploying the latest main branch, select **Bahasa Indonesia receipt (IDR)** for receipt photos. English/Bahasa field labels, original source text and normalized IDR values are supported. CPU neural OCR packages and a small trained classifier are included; no paid API or GPU is required. See [the Indonesian receipt guide](INDONESIAN_EXTRACTION.md).

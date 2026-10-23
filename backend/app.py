@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import Semaphore
 from typing import Any
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response,FileResponse,JSONResponse
 from pydantic import BaseModel, Field
@@ -95,6 +95,7 @@ def health():
     return {'status':'ok' if ocr else 'degraded','ocr_available':ocr,'ocr_languages':languages,
             'extraction_mode':os.getenv('EXTRACTION_MODE','auto'),
             'token_model_configured':bool(os.getenv('TOKEN_MODEL_PATH')),
+            'receipt_model_configured':(Path(__file__).parent/'assets'/'indonesian_line_model.json').is_file(),
             'token_model_name':Path(os.getenv('TOKEN_MODEL_PATH','')).name if os.getenv('TOKEN_MODEL_PATH') else None,
             'time':time.time()}
 
@@ -114,7 +115,9 @@ def classify(text):
         return 'financial_report'
     return 'unknown'
 
-def process(raw, filename):
+def process(raw, filename, locale="auto"):
+    if locale not in ("auto","id-ID","en-IN"):
+        raise HTTPException(400,"Choose auto, id-ID or en-IN document locale")
     if not pipeline_lock.acquire(blocking=False):
         raise HTTPException(503,'Another document is processing. Please retry shortly.')
     started=time.perf_counter()
@@ -134,15 +137,47 @@ def process(raw, filename):
                 clean=packet['image']
                 tokens=packet['tokens']
             else:
-                clean=preprocess_page(packet['image'])
                 try:
-                    tokens=tokens_to_dicts(run_ocr(clean))
+                    try:
+                        from .receipt_ocr import recognize
+                    except ImportError:
+                        from receipt_ocr import recognize
+                    if locale=='id-ID':
+                        clean,tokens,ocr_details=recognize(packet['image'],lambda image,psm:run_ocr(image,langs='ind+eng',psm=psm),preprocess_page,neural=True)
+                    else:
+                        # Preserve the validated Indian/general-document OCR path.
+                        clean=preprocess_page(packet['image'])
+                        tokens=tokens_to_dicts(run_ocr(clean,langs='eng+hin'))
+                        ocr_details={'selected':{'variant':'processed_auto','psm':3,'box_granularity':'word'},'policy':'General document OCR; Indonesian auto-detection can upgrade to neural OCR'}
                 except Exception as exc:
                     logging.exception('OCR failed')
                     raise HTTPException(503,'OCR unavailable or timed out. Check Tesseract and language packs.') from exc
             text=tokens_to_text(tokens)
+            if locale=='auto' and packet['tokens'] is None:
+                try:
+                    from . import indonesian as receipt_locale
+                    from .receipt_ocr import score
+                    from .neural_ocr import recognize as neural_recognize
+                    if receipt_locale.detect(text):
+                        improved=tokens_to_dicts(neural_recognize(packet['image']))
+                        if score(improved)>score(tokens):
+                            clean=packet['image']; tokens=improved; text=tokens_to_text(tokens)
+                            ocr_details={'selected':{'variant':'neural_ppocrv6','box_granularity':'line'},'policy':'Auto-detected Indonesian receipt; source quality comparison'}
+                except Exception:
+                    pass
             diagnostics={'text_source':packet['text_source']}
+            if packet['tokens'] is None:
+                diagnostics['ocr_selection']=ocr_details
             fields=extract_fields(clean,text,tokens,diagnostics=diagnostics)
+            try:
+                from . import indonesian
+            except ImportError:
+                import indonesian
+            is_indonesian=locale=='id-ID' or (locale=='auto' and indonesian.detect(text))
+            if is_indonesian:
+                fields=indonesian.fields(tokens,fields)
+                diagnostics['locale']='id-ID'
+                diagnostics['language_policy']='Original Indonesian text preserved; English labels are glossary mappings, not document translation'
             invoice=fields.get('invoice_number',{}).get('value')
             continuing=previous_invoice and ((invoice and invoice==previous_invoice) or (not invoice and CONTINUED.search(text)))
             inherited=None
@@ -151,12 +186,15 @@ def process(raw, filename):
             geometry_items,columns=extract_items(tokens,inherited)
             native_items=pdf_table_items(packet.get('tables',[]))
             items=native_items or geometry_items
-            fields=reconcile_candidates(fields,items)
+            if not is_indonesian:
+                fields=reconcile_candidates(fields,items)
+            else:
+                items=indonesian.line_items(tokens)
             previous_invoice=invoice or (previous_invoice if continuing else None)
             previous_columns=columns
             previous_size=clean.size
             warnings=sorted({warning for value in fields.values() for warning in value.get('warnings',[])})
-            kind=classify(text)
+            kind='indonesian_receipt' if is_indonesian else classify(text)
             if continuing and kind=='unknown' and output:
                 kind=output[-1]['document_type']
             if kind in ('bank_statement','financial_report'):
@@ -172,7 +210,7 @@ def process(raw, filename):
                   'extraction_diagnostics':diagnostics,'relations':spatial_relations(fields,tokens),
                   'validation':validate_document(kind,fields,items,transactions,balance_checks,metrics),
                   'ocr_text':text,'ocr_tokens':tokens,'ocr_token_count':len(tokens),
-                  'text_source':packet['text_source'],'image_size':list(clean.size),'warnings':warnings,
+                  'currency':'IDR' if is_indonesian else None,'locale':'id-ID' if is_indonesian else locale,'text_source':packet['text_source'],'image_size':list(clean.size),'warnings':warnings,
                   'preview_available':True}
             page['review_reasons']=review_reasons(page)
             if any(reason['code'] in ('conflicting_or_invalid_field','low_ocr_quality','unreadable_page') for reason in page['review_reasons']):
@@ -204,13 +242,13 @@ async def read_upload(file):
     return validate_upload(raw,file.filename)
 
 @app.post('/extract')
-async def extract(file:UploadFile=File(...)):
+async def extract(file:UploadFile=File(...),locale:str=Form('auto')):
     raw,name = await read_upload(file)
-    return await run_in_threadpool(process,raw,name)
+    return await run_in_threadpool(process,raw,name,locale)
 
 @app.post('/extract-to-excel')
 async def extract_to_excel(file:UploadFile=File(...)):
-    result = await extract(file)
+    result = await extract(file,locale="auto")
     return Response(excel_bytes(result),media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                     headers={'Content-Disposition':'attachment; filename="extracted.xlsx"'})
 
@@ -244,13 +282,21 @@ def correct_document(document_id:str, correction:Correction):
     result = require_document(document_id)
     if correction.page > len(result['pages']):
         raise HTTPException(400,'Page does not exist')
-    if set(correction.fields)-set(FIELD_QUESTIONS):
+    if set(correction.fields)-set(FIELD_QUESTIONS)-{'service_charge','amount_paid','change'}:
         raise HTTPException(400,'Unknown field name')
     page = result['pages'][correction.page-1]
     for key,value in correction.fields.items():
         previous = page['fields'][key]
-        page['fields'][key] = {'value':value,'confidence':None,'source':'human_review',
-                               'original':previous.get('original',previous),'boxes':evidence(value,page.get('ocr_tokens',[])),'review_required':False}
+        if page.get('locale')=='id-ID' and key in ('subtotal','tax_amount','total_amount','service_charge','amount_paid','change','discount','round_off') and value is not None:
+            try:
+                from .indonesian import number as idr_number
+            except ImportError:
+                from indonesian import number as idr_number
+            parsed=idr_number(value)
+            if parsed is not None: value=format(parsed,'f')
+        retained={name:previous[name] for name in ('source_text','label_original','label_en','currency') if name in previous}
+        page['fields'][key] = {**retained,'value':value,'confidence':None,'source':'human_review',
+                               'original':previous.get('original',previous),'boxes':previous.get('boxes',[]) if value==previous.get('value') else evidence(value,page.get('ocr_tokens',[])),'review_required':False}
     if correction.line_items is not None:
         page.setdefault('original_line_items',page['line_items'])
         page['line_items'] = correction.line_items

@@ -3,6 +3,7 @@ import io
 import os
 import numpy as np
 import cv2
+cv2.setNumThreads(1)
 from PIL import Image, ImageOps, ImageSequence
 from pdf2image import convert_from_bytes, pdfinfo_from_bytes
 

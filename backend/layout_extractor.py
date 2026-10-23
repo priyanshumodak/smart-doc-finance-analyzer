@@ -183,8 +183,8 @@ def extract_fields(pil_img: Image.Image, ocr_text='', tokens=None, diagnostics=N
 
 def group_rows(tokens, y_tolerance=8):
     rows = []
-    for token in sorted(tokens, key=lambda t: (t['box'][1], t['box'][0])):
-        center = (token['box'][1] + token['box'][3]) / 2
+    for token in sorted(tokens, key=lambda t: (t.get('row_y',t['box'][1]), t['box'][0])):
+        center = token.get('row_y',(token['box'][1] + token['box'][3]) / 2)
         if rows and abs(center - rows[-1]['y']) <= max(y_tolerance, (token['box'][3]-token['box'][1])*0.5):
             rows[-1]['tokens'].append(token)
         else:

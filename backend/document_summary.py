@@ -70,8 +70,9 @@ def summarize(pages):
             balance_checks.append({'rule':'previous balance - debit + credit == balance','expected':float(expected),
                                    'actual':float(after),'passed':abs(expected-after)<=money('0.01')})
         metrics=[{**item,'page':page['page']} for page in members for item in page.get('financial_metrics',[])]
-        fields=reconcile_candidates(fields,items)
         kind=next((page['document_type'] for page in members if page.get('document_type')!='unknown'),'unknown')
+        if kind!='indonesian_receipt':
+            fields=reconcile_candidates(fields,items)
         validation=validate_document(kind,fields,items,transactions,balance_checks,metrics)
         quality=[reason for page in members if not page.get('reviewed_at') for reason in page.get('review_reasons',[]) if reason.get('code') in ('low_ocr_quality','unreadable_page')]
         if quality:

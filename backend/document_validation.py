@@ -5,6 +5,12 @@ except ImportError:
     from validation import run_validation,money
 
 def validate_document(kind,fields,line_items,transactions=None,balance_checks=None,metrics=None):
+    if kind=='indonesian_receipt':
+        try:
+            from .indonesian import validate
+        except ImportError:
+            from indonesian import validate
+        return validate(fields,line_items)
     if kind not in ('bank_statement','financial_report'):
         report=run_validation(fields,line_items)
         report['document_schema']='invoice_or_receipt'

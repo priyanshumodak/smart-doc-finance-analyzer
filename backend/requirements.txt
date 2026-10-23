@@ -17,3 +17,7 @@ pypdfium2>=4.30,<5
 
 # Requests 2.32.x supports chardet versions below 6.
 chardet>=3,<6
+
+# Compact CPU neural OCR; models are bundled in the RapidOCR wheel.
+rapidocr==3.10.0
+onnxruntime==1.20.1

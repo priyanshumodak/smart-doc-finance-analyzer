@@ -25,13 +25,13 @@ Install Python 3.11 and Tesseract OCR, then open PowerShell in the cloned reposi
 
 Open **http://127.0.0.1:8501**. API documentation: http://127.0.0.1:8000/docs.
 
-OCR is the validation-recommended default and needs no model-weight download. PDFium renders the normal PDF path; Poppler supports the legacy PDF decoder. See [installation details](docs/INSTALLATION.md) for system dependencies and manual environment setup.
+CPU OCR is the default. Indonesian receipts use bundled neural OCR weights and an included compact classifier; no separate LayoutLM checkpoint download is required. PDFium renders the normal PDF path; Poppler supports the legacy PDF decoder. See [installation details](docs/INSTALLATION.md) for system dependencies and manual environment setup.
 
 Try `sample_docs/demo_digital_invoice.pdf`, then `sample_docs/demo_continued_invoice.pdf`. These are fictional examples, not customer documents. Stop services with `scripts/stop.ps1` before switching modes.
 
 ## Source-only repository
 
-Virtual environments, trained weights, generated/downloaded datasets, document history, uploads, logs, generated reports, PDFs/slides and release ZIPs are excluded from Git. Existing local files are kept on disk. The small explicitly listed fictional demo files are included.
+Virtual environments, large neural checkpoints, generated/downloaded datasets, document history, uploads, logs, generated reports and release ZIPs stay out of Git. Reviewed fictional demos, three licensed real receipts and the small deployed receipt-classifier JSON are intentionally included.
 
 Generate the training corpus locally on a fresh clone:
 
@@ -49,7 +49,7 @@ Optional GPU setup/training:
 .\scripts\train_gpu.ps1 -Output models/layoutlmv3-new -Epochs 3
 ```
 
-Model weights are not in this repository. After training or restoring a complete checkpoint, use its relative path explicitly:
+Large LayoutLMv3 checkpoint weights are not in this repository. The compact Indonesian receipt classifier is included separately under backend/assets. After training or restoring a complete checkpoint, use its relative path explicitly:
 
 ```powershell
 .\scripts\stop.ps1
@@ -70,7 +70,7 @@ Tests use self-contained fixtures; they do not require the excluded training dat
 
 ## Results and walkthrough
 
-The [public results summary](docs/results/README.md) records the completed local run and its limitations. Synthetic BIO entity F1, end-to-end field F1, and real-world accuracy are different measurements. OCR rules outperformed combined model mode on final-field validation, so OCR remains the recommended default.
+The [public results summary](docs/results/README.md) records the completed local run and its limitations. Synthetic BIO entity F1, end-to-end field F1, and real-world accuracy are different measurements. OCR rules outperformed the old combined LayoutLM mode on synthetic Indian invoice validation. Indonesian receipt improvements and their separate real-image test results are documented in the Indonesian extraction guide.
 
 - [Full application walkthrough](docs/USER_WALKTHROUGH.md)
 - [Professor demonstration and viva](docs/PROFESSOR_DEMO.md)
@@ -89,10 +89,14 @@ Follow the [complete deployment and visitor walkthrough](docs/DEPLOYMENT_WALKTHR
 
 ## Deploy on Streamlit Community Cloud
 
-Use the root **`streamlit_app.py`** entrypoint with **Python 3.11**. This runs the complete OCR pipeline inside Streamlit, without a separate backend server or model download. Upload, samples, corrections, revalidation and downloads remain available with isolated visitor histories.
+Use the root **`streamlit_app.py`** entrypoint with **Python 3.11**. This runs the complete OCR pipeline inside Streamlit, without a separate backend server, GPU or separate LayoutLM checkpoint download. Upload, samples, corrections, revalidation and downloads remain available with isolated visitor histories.
 
 See [exact Streamlit Cloud deployment steps](docs/STREAMLIT_CLOUD.md). Root `requirements.txt`, `packages.txt` and `.streamlit/config.toml` provide the cloud dependencies and five-megabyte upload limit.
 
 ## Real receipt datasets and images
 
 The app now includes **Try real receipt images (CORD)** with three licensed real receipt photographs, OCR, published-value comparison and normal review/download controls. A separate 60-image real-data subset has been validated and evaluated, and a small real-data GPU training pilot is complete. Read [real-data setup and honest results](docs/REAL_DATA.md); these Indonesian receipts are a different domain from Indian GST invoices.
+
+## Indonesian receipts
+
+Choose **Bahasa Indonesia receipt (IDR)** for faithful source-language extraction with English/Bahasa field labels. The deployment now includes neural OCR, a classifier trained on 798 unique real receipts, IDR normalization, perspective-aware rows and receipt-specific reconciliation. See [setup, model details and measured accuracy](docs/INDONESIAN_EXTRACTION.md).

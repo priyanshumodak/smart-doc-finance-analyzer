@@ -42,3 +42,9 @@ class StandaloneTests(unittest.TestCase):
             with patch.object(app,'MAX_BYTES',4):
                 self.assertEqual(request('POST','/extract',headers=headers,files={'file':(name,raw)}).status_code,status)
         self.assertEqual(request('PATCH','/documents/'+'a'*32,headers=headers,json={'page':0}).status_code,400)
+
+    def test_invalid_locale_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ,{'DATABASE_PATH':directory+'/receipt.sqlite3'}):
+            headers={'X-Visitor-Session':'a'*64}
+            result=request('POST','/extract',headers=headers,files={'file':('test.png',b'123')},data={'locale':'unsupported'})
+            self.assertEqual(result.status_code,400)

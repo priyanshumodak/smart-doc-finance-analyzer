@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0,str(ROOT))
-# This entrypoint is always a public, OCR-only demonstration.
+# Public CPU OCR pipeline: bundled neural OCR and a compact trained receipt classifier.
 os.environ['APP_RUNTIME'] = 'standalone'
 os.environ['PUBLIC_DEMO_MODE'] = '1'
 os.environ['EXTRACTION_MODE'] = 'ocr'

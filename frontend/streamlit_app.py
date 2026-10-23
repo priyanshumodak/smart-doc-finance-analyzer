@@ -49,6 +49,8 @@ with st.sidebar:
         st.warning('Backend is unavailable')
     except RuntimeError as exc:
         st.warning(str(exc))
+    if 'health' in locals() and health.get('receipt_model_configured'):
+        st.caption('Indonesian receipt model ready')
     threshold = st.slider('Highlight confidence below',0.0,1.0,0.6,0.05)
     query = st.text_input('Search saved filenames')
     try:
@@ -122,7 +124,7 @@ if (real_root/'catalog.json').is_file():
         if st.button('Analyze real receipt',type='primary'):
             try:
                 with st.spinner('Running OCR on the real receipt...'):
-                    extracted=api('POST','/extract',files={'file':(real_path.name,real_path.read_bytes(),'image/jpeg')}).json()
+                    extracted=api('POST','/extract',files={'file':(real_path.name,real_path.read_bytes(),'image/jpeg')},data={'locale':'id-ID'}).json()
                     st.session_state.result=extracted
                     st.session_state.real_reference={'document_id':extracted['id'],'record':real_record}
                     st.session_state.pop('preview',None)
@@ -131,6 +133,7 @@ if (real_root/'catalog.json').is_file():
             except (requests.RequestException,RuntimeError,ValueError) as exc:
                 st.error(str(exc))
 
+document_locale=st.selectbox('Document language / receipt format',['auto','id-ID','en-IN'],format_func=lambda value:{'auto':'Auto-detect','id-ID':'Bahasa Indonesia receipt (IDR)','en-IN':'English / Indian invoice'}[value])
 uploads = st.file_uploader('Upload PDF, image or multipage TIFF',type=['pdf','png','jpg','jpeg','tif','tiff'],accept_multiple_files=True)
 if st.button('Analyze documents',type='primary',disabled=not uploads):
     results = []
@@ -138,7 +141,7 @@ if st.button('Analyze documents',type='primary',disabled=not uploads):
     for i,upload in enumerate(uploads):
         with st.spinner(f'Analyzing {upload.name}…'):
             try:
-                result = api('POST','/extract',files={'file':(upload.name,upload.getvalue(),upload.type)}).json()
+                result = api('POST','/extract',files={'file':(upload.name,upload.getvalue(),upload.type)},data={'locale':document_locale}).json()
                 results.append(result)
                 st.session_state.result = result
                 st.session_state.preview = (upload.name,upload.getvalue())
@@ -196,7 +199,7 @@ with left:
     selected_field=st.selectbox('Highlight a field',['']+[name for name,data in page['fields'].items() if data.get('value')],
                                 format_func=lambda name:name.replace('_',' ').title() if name else 'Choose a field',
                                 key=f"field-highlight-{result['id']}-{page_index}")
-    show_layout=st.checkbox('Show all word boxes',key=f"layout-{result['id']}-{page_index}")
+    show_layout=st.checkbox('Show OCR boxes',key=f"layout-{result['id']}-{page_index}")
     if page.get('preview_available'):
         try:
             def load_preview(document_id,number):
@@ -223,14 +226,21 @@ with left:
     st.caption('Detected type: '+page.get('document_type','unknown'))
 with right:
     st.subheader('Review and correct')
+    if page.get('locale')=='id-ID':
+        st.caption('Bahasa Indonesia: teks asli dipertahankan. IDR amounts are normalized; original labels and amounts remain in source evidence. Menu-item translation is not performed.')
     st.caption('Double-click a cell in the value column below to edit it. Check item rows too, then click Save corrections and revalidate. Review required is the validation status.')
-    fields = [{'field':key,'value':data.get('value') or '', 'confidence':data.get('confidence'),
+    field_language=st.radio('Field labels',['English','Bahasa Indonesia'],horizontal=True,key=f"field-language-{result['id']}-{page_index}") if page.get('locale')=='id-ID' else 'English'
+    id_labels={'vendor_name':'Nama penjual','invoice_number':'Nomor struk','invoice_date':'Tanggal','subtotal':'Subtotal','tax_amount':'Pajak','total_amount':'Total','service_charge':'Biaya layanan','amount_paid':'Pembayaran','change':'Kembalian','discount':'Diskon','round_off':'Pembulatan'}
+    if page.get('locale')=='id-ID':
+        with st.expander('Original Indonesian evidence and English labels'):
+            st.dataframe(pd.DataFrame([{'original label':data.get('label_original'),'English label':data.get('label_en'),'source amount':data.get('source_text'),'normalized IDR':data.get('value')} for data in page['fields'].values() if data.get('currency')=='IDR' and data.get('source_text')]),hide_index=True)
+    fields = [{'field':key,'label':id_labels.get(key,key) if field_language=='Bahasa Indonesia' else key.replace('_',' ').title(),'value':data.get('value') or '', 'confidence':data.get('confidence'),
                'source':data.get('source','unknown')} for key,data in page['fields'].items()
-              if page.get('document_type') not in ('bank_statement','financial_report') or data.get('value') is not None]
+              if (page.get('document_type') not in ('bank_statement','financial_report') or data.get('value') is not None) and data.get('applicable') is not False]
     low = sum(row['value']!='' and row['confidence'] is not None and row['confidence']<threshold for row in fields)
     st.caption(f'{low} populated fields below the confidence threshold. Rule scores are heuristic, not calibrated probabilities.')
     with st.form(f"review-{result['id']}-{page_index}-{result.get('reviewed_at','initial')}"):
-        edited = st.data_editor(pd.DataFrame(fields,columns=['field','value','confidence','source']),disabled=['field','confidence','source'],hide_index=True,use_container_width=True)
+        edited = st.data_editor(pd.DataFrame(fields,columns=['field','label','value','confidence','source']),disabled=['field','label','confidence','source'],hide_index=True,use_container_width=True)
         items = pd.DataFrame(page['line_items'])
         columns = ['description','qty','rate','amount']+[name for name in ('hsn','discount','tax') if name in items.columns]
         if items.empty:
@@ -242,10 +252,11 @@ with right:
             transaction_columns=['date','description','debit','credit','balance']
             edited_transactions=st.data_editor(pd.DataFrame(page.get('transactions',[])).reindex(columns=transaction_columns),
                                                num_rows='dynamic',hide_index=True,use_container_width=True)
+        confirm_values=st.checkbox('I checked every displayed value against the source',key=f"confirm-fields-{result['id']}-{page_index}") if page.get('locale')=='id-ID' else False
         submitted = st.form_submit_button('Save corrections and revalidate')
     if submitted:
         changes = {row['field']:(None if pd.isna(row['value']) else str(row['value']).strip() or None) for row in edited.to_dict('records')
-                   if (None if pd.isna(row['value']) else str(row['value']).strip() or None) != page['fields'][row['field']].get('value')}
+                   if confirm_values or (None if pd.isna(row['value']) else str(row['value']).strip() or None) != page['fields'][row['field']].get('value')}
         clean_items = json.loads(edited_items.to_json(orient='records'))
         payload={'page':page_index+1,'fields':changes,'line_items':clean_items}
         if edited_transactions is not None:
