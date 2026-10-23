@@ -23,10 +23,10 @@ The earlier placeholder “Indian Financial Documents Dataset” was not verifie
 
 ```powershell
 .\backend\venv\Scripts\python.exe scripts/download_cord.py --limit 2 --out data/cord_v2_sample
-.\backend\venv\Scripts\python.exe scripts/download_cord.py --limit 0 --out data/cord_v2
+.\backend\venv\Scripts\python.exe scripts/download_cord.py --transport streaming --limit 0 --out data/cord_v2
 ```
 
-`--limit` is per original split; zero imports the full released dataset. The full download can be several GB. The adapter retains the source, original splits, image/annotation hashes and CC-BY-4.0 notice. Only total, subtotal and tax categories are mapped to the finance schema; all other tokens are labelled O. It preserves IDR currency and never invents GSTIN/PAN labels. Long receipts can exceed the training context and require chunking before training.
+`--limit` is per original split; zero with `--transport streaming` imports the full released dataset. The default viewer transport is for small cached subsets. The full download can be several GB. The adapter retains the source, original splits, image/annotation hashes and CC-BY-4.0 notice. Only total, subtotal and tax categories are mapped to the finance schema; all other tokens are labelled O. It preserves IDR currency and never invents GSTIN/PAN labels. Long receipts can exceed the training context and require chunking before training.
 
 ## Real Indian invoices
 
@@ -51,3 +51,7 @@ Keep these scopes separate in the report and cite source datasets/models.
 The importer retains the publisher's 50-example test split and creates a seeded 45-example validation subset from the 450 publisher training examples (405/45/50). It preserves financial JSON and partial annotation masks; it does not invent token labels or silently repair publisher annotations. The current GPU model is trained on this project's original 700 images, not this external corpus, so its test examples can provide a separate cross-layout check.
 
 Another checked source, `processvenue/INVOICE_ANNOTATION_V2`, supplies a licensed CSV of field annotations but no corresponding images in the checked repository. It is not treated as a ready image-training corpus. FATURA2 provides generated templates rather than real invoices. Permission-cleared real invoice images still need to be collected and checked separately.
+
+## Implemented real-image workflow
+
+See [real receipt data, evaluation and training](../docs/REAL_DATA.md). The new `data/cord_real_v2` subset has 60 real receipts with corrected value-only labels and three-field evaluation masks. The earlier six-image importer output is retained as legacy data; use the new import for metrics and training.

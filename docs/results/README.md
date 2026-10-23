@@ -33,3 +33,5 @@ The trained model was separately exercised through the HTTP API on CUDA with 14 
 - No real Indian-invoice, Hindi, handwriting, full CORD/FUNSD or trained table-structure benchmark is claimed.
 
 The repository ships generator code rather than the local corpus/weights. Fonts, platform and dependency differences can change regenerated images and scores. Detailed local artifacts can be recreated using the training/evaluation scripts; original local history and reviewed financial records are not included.
+
+Real-document results are reported separately in [the CORD receipt experiment](REAL_RECEIPTS.md).

@@ -6,7 +6,7 @@ from pathlib import Path
 
 FIELDS = ['vendor_name','invoice_number','invoice_date','gstin','pan','subtotal','tax_amount','total_amount','bill_to','due_date','place_of_supply']
 
-def normalize(value,field=None):
+def normalize(value,field=None,currency=None):
     if isinstance(value,dict):
         value = value.get('value')
     if value is None:
@@ -21,6 +21,16 @@ def normalize(value,field=None):
                 pass
     if field is not None and field not in ('subtotal','tax_amount','total_amount','cgst','sgst','igst','discount','round_off'):
         return re.sub(r'\s+',' ',text)
+    if currency=='IDR' and field in ('subtotal','tax_amount','total_amount'):
+        numeric=re.sub(r'(?i)(?:rp\.?|idr|\s)','',text).strip()
+        if re.fullmatch(r'[+-]?\d+(?:[.,]\d{3})+(?:[.,]\d{1,2})?',numeric):
+            groups=re.split(r'[.,]',numeric)
+            numeric=''.join(groups) if len(groups[-1])==3 else ''.join(groups[:-1])+'.'+groups[-1]
+        try:
+            from decimal import Decimal
+            return str(Decimal(numeric).normalize())
+        except Exception:
+            return re.sub(r'\s+',' ',text)
     numeric = re.sub(r'(?:inr|rs\.?|₹|,|\s)', '', text)
     try:
         from decimal import Decimal
@@ -43,7 +53,7 @@ def evaluate(truth, predictions):
         for field in FIELDS:
             if record.get('annotated_fields') is not None and field not in record['annotated_fields']:
                 continue
-            expected, actual = normalize(record.get(field),field),normalize(predicted.get(field),field)
+            expected, actual = normalize(record.get(field),field,record.get('currency')),normalize(predicted.get(field),field,record.get('currency'))
             score = totals[field]
             if expected:
                 score['support'] += 1

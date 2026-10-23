@@ -1,0 +1,61 @@
+{
+  "dataset": "CORD-v2",
+  "source": "https://github.com/clovaai/cord",
+  "license": "CC-BY-4.0",
+  "split": "train",
+  "receipts": [
+    {
+      "id": "cord_train_00000",
+      "image_path": "cord_train_00000.jpg",
+      "split": "train",
+      "currency": "IDR",
+      "source": "naver-clova-ix/cord-v2",
+      "annotated_fields": [
+        "total_amount",
+        "subtotal",
+        "tax_amount"
+      ],
+      "total_amount": "1,591,600",
+      "subtotal": "1,346,000",
+      "tax_amount": "144,695",
+      "sha256": "a7efa7596757d7916c5e454e8bd98e3371cdf476ac737a269693804484cfc193",
+      "source_index": 0,
+      "annotation_sha256": "719469fb99bafb6067a781d12b3ed0583d0ae9e3bc1cb40202673af7c492e996"
+    },
+    {
+      "id": "cord_train_00001",
+      "image_path": "cord_train_00001.jpg",
+      "split": "train",
+      "currency": "IDR",
+      "source": "naver-clova-ix/cord-v2",
+      "annotated_fields": [
+        "total_amount",
+        "subtotal",
+        "tax_amount"
+      ],
+      "total_amount": "580,965",
+      "subtotal": "503,000",
+      "tax_amount": "52,815",
+      "sha256": "4eeef6f59cc6ed5be9c84914498aa8acb3f5a98ac5978382247e4c26e1f2c94e",
+      "source_index": 1,
+      "annotation_sha256": "dcd55275fb1972e8f0666115c78d687646951b875625c4e3fc306ddcc822fa92"
+    },
+    {
+      "id": "cord_train_00002",
+      "image_path": "cord_train_00002.jpg",
+      "split": "train",
+      "currency": "IDR",
+      "source": "naver-clova-ix/cord-v2",
+      "annotated_fields": [
+        "total_amount",
+        "subtotal",
+        "tax_amount"
+      ],
+      "total_amount": "334,000",
+      "subtotal": "334,000",
+      "sha256": "6db1c1cf9ae1794e22e9f7406932a5fd1ea55759bd025c389348a371981e10f4",
+      "source_index": 2,
+      "annotation_sha256": "edac94f70ff752324ec75d44c68d1f920310e1250333fc62c3293272c96e0388"
+    }
+  ]
+}

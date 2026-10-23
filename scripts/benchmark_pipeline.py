@@ -48,8 +48,11 @@ def main():
         (folder/f'{path.stem}.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
         print(f'{index}/{len(selected)}: {path.name}: {result["status"]}',flush=True)
     report=evaluate(selected,predictions)
+    manifest_path=root/'manifest.json'
+    manifest=json.loads(manifest_path.read_text(encoding='utf-8-sig')) if manifest_path.exists() else {}
     report.update({'mode':args.mode,'split':args.split,'limit':args.limit,'offset':args.offset,'seconds':round(time.perf_counter()-started,2),
-                   'dataset':str(root),'text_mode':args.text_mode,'candidate_policy':os.environ['CANDIDATE_POLICY'],'scope':'End-to-end fields after OCR, extraction and fallbacks. Synthetic selected split only; not token BIO F1.'})
+                   'dataset':str(root),'text_mode':args.text_mode,'candidate_policy':os.environ['CANDIDATE_POLICY'],'dataset_metadata':{key:manifest.get(key) for key in ('name','source','license','source_revision','real_documents')},
+                   'scope':'End-to-end first-page fields after actual OCR and extraction; explicit annotation masks apply. Real and synthetic datasets are reported separately. Not token BIO F1.'})
     (folder/'evaluation.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
     print(json.dumps(report['micro'],indent=2),flush=True)
 

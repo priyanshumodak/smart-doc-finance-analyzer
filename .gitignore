@@ -114,3 +114,13 @@ Desktop.ini
 
 # Streamlit Cloud secrets are configured in the hosting dashboard
 .streamlit/secrets.toml
+
+# Explicitly licensed real CORD training-split demonstrations only
+!/sample_docs/real_receipts/
+/sample_docs/real_receipts/*
+!/sample_docs/real_receipts/cord_train_00000.jpg
+!/sample_docs/real_receipts/cord_train_00001.jpg
+!/sample_docs/real_receipts/cord_train_00002.jpg
+!/sample_docs/real_receipts/catalog.json
+!/sample_docs/real_receipts/LICENSE-CC-BY.txt
+!/sample_docs/real_receipts/ATTRIBUTION.md

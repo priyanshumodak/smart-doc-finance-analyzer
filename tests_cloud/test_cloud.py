@@ -40,3 +40,19 @@ class CloudAppTests(unittest.TestCase):
             self.assertEqual(result['filename'],'demo_invoice.png')
             self.assertEqual(result['pages'][0]['text_source'],'ocr')
             self.assertGreater(result['pages'][0]['ocr_token_count'],0)
+
+    def test_real_receipt_demo_uses_image_without_reference_answers(self):
+        from backend import app as pipeline
+        import json
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ,{'DATABASE_PATH':directory+'/real.sqlite3'}), patch('requests.request',side_effect=AssertionError('External API must not be used')):
+            dashboard=AppTest.from_file(str(ROOT/'streamlit_app.py'),default_timeout=120).run()
+            with patch('backend.app.process',wraps=pipeline.process) as extraction:
+                next(b for b in dashboard.button if b.label=='Analyze real receipt').click().run(timeout=120)
+            self.assertFalse(dashboard.exception,[e.message for e in dashboard.exception])
+            self.assertEqual(dashboard.session_state['result']['filename'],'cord_train_00000.jpg')
+            self.assertEqual(dashboard.session_state['result']['pages'][0]['text_source'],'ocr')
+            args=extraction.call_args.args
+            self.assertEqual(len(args),2)
+            self.assertEqual(args[0],(ROOT/'sample_docs/real_receipts/cord_train_00000.jpg').read_bytes())
+            self.assertEqual(dashboard.session_state['real_reference']['document_id'],dashboard.session_state['result']['id'])
+            self.assertTrue(any(e.label=='Published dataset values for comparison' for e in dashboard.expander))

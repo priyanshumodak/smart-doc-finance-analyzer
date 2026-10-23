@@ -65,7 +65,7 @@ with st.sidebar:
         if st.button('Clear my documents'):
             try:
                 api('DELETE','/documents')
-                for key in ('result','preview','batch','excel'):
+                for key in ('result','preview','batch','excel','real_reference'):
                     st.session_state.pop(key,None)
                 st.rerun()
             except (requests.RequestException,RuntimeError) as exc:
@@ -107,6 +107,30 @@ if available:
                 st.error(str(exc))
         st.caption('Digital invoice expected: subtotal 100, tax 18, total 118. Continued invoice expected: two pages, two merged rows, total 354. Scans can need corrections.')
 
+real_root = sample_root/'real_receipts'
+if (real_root/'catalog.json').is_file():
+    real_catalog=json.loads((real_root/'catalog.json').read_text(encoding='utf-8'))
+    with st.expander('Try real receipt images (CORD)'):
+        st.caption('Real Indonesian receipt photographs from CORD-v2, Clova AI/NAVER, CC-BY-4.0. These are training-split demonstrations, not test-set results. IDR currency and unfamiliar layouts can require manual review.')
+        st.markdown('[Dataset and attribution](https://github.com/clovaai/cord) | [CC-BY-4.0 license](https://creativecommons.org/licenses/by/4.0/)')
+        real_choice=st.selectbox('Real receipt',range(len(real_catalog['receipts'])),format_func=lambda i:f"CORD training receipt {i+1}")
+        real_record=real_catalog['receipts'][real_choice]
+        real_path=real_root/real_record['image_path']
+        if st.checkbox('Preview the real receipt'):
+            st.image(str(real_path),width=360)
+        st.download_button('Download real receipt image',real_path.read_bytes(),file_name=real_path.name,mime='image/jpeg')
+        if st.button('Analyze real receipt',type='primary'):
+            try:
+                with st.spinner('Running OCR on the real receipt...'):
+                    extracted=api('POST','/extract',files={'file':(real_path.name,real_path.read_bytes(),'image/jpeg')}).json()
+                    st.session_state.result=extracted
+                    st.session_state.real_reference={'document_id':extracted['id'],'record':real_record}
+                    st.session_state.pop('preview',None)
+                    st.session_state.pop('batch',None)
+                st.rerun()
+            except (requests.RequestException,RuntimeError,ValueError) as exc:
+                st.error(str(exc))
+
 uploads = st.file_uploader('Upload PDF, image or multipage TIFF',type=['pdf','png','jpg','jpeg','tif','tiff'],accept_multiple_files=True)
 if st.button('Analyze documents',type='primary',disabled=not uploads):
     results = []
@@ -138,6 +162,14 @@ if not result:
     st.stop()
 
 st.subheader(result['filename'])
+reference=st.session_state.get('real_reference')
+if reference and reference['document_id']==result['id']:
+    with st.expander('Published dataset values for comparison',expanded=True):
+        st.caption('Reference values are supplied by CORD and are not inputs to extraction. Currency: Indonesian rupiah (IDR). Only these three fields have mapped annotations; this does not establish full receipt accuracy.')
+        st.dataframe(pd.DataFrame([{'field':name,'published value (IDR)':reference['record'].get(name),
+                    'extracted value':result['pages'][0]['fields'].get(name,{}).get('value')}
+                    for name in ('subtotal','tax_amount','total_amount')]),hide_index=True)
+
 summary=result.get('document_summary')
 if summary:
     with st.expander(f"Combined results: {summary['document_count']} document(s)",expanded=result['num_pages']>1):

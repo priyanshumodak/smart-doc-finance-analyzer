@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements/requirements-ocr.txt -r /tmp
 COPY backend /app/backend
 COPY frontend /app/frontend
 COPY sample_docs/demo_digital_invoice.pdf sample_docs/demo_continued_invoice.pdf sample_docs/demo_invoice.png sample_docs/demo_bank_statement.png sample_docs/demo_financial_report.pdf /app/sample_docs/
+COPY sample_docs/real_receipts /app/sample_docs/real_receipts
 COPY scripts/serve_public.py /app/scripts/serve_public.py
 RUN useradd --create-home appuser
 USER appuser

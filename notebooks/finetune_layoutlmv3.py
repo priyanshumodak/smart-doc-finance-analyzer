@@ -187,11 +187,13 @@ def main():
             return control
     trainer=Trainer(model=model,args=training,train_dataset=datasets['train'],eval_dataset=datasets['validation'],
                     compute_metrics=compute_metrics,callbacks=[ValidationTarget()])
-    metadata={'base_model':args.model_name,'train_mode':'classifier_head_only' if args.freeze_backbone else 'full_finetune',
+    manifest_path=root/'manifest.json'
+    provenance=json.loads(manifest_path.read_text(encoding='utf-8-sig')) if manifest_path.exists() else {}
+    metadata={'dataset_provenance':{key:provenance.get(key) for key in ('name','source','license','source_revision','real_documents')},'base_model':args.model_name,'train_mode':'classifier_head_only' if args.freeze_backbone else 'full_finetune',
               'cuda':torch.cuda.is_available(),'gradient_checkpointing':checkpointing_mode,'reviewed_training_examples':reviewed_count,'split_counts':{name:len(rows) for name,rows in split.items()},
               'model_windows':{name:len(dataset) for name,dataset in datasets.items()},'max_length':args.max_length,'dataset_path':str(root),'max_steps':args.max_steps,'epochs':args.epochs,'target_validation_f1':args.target_validation_f1,'seed':42,
               'annotation_sources':sorted({row.get('annotation_source','unknown') for rows in split.values() for row in rows}),
-              'limitations':'Synthetic token/entity metrics using supplied word labels; not real OCR accuracy or real-document benchmark'}
+              'limitations':'Token/entity metrics use supplied words and labels, not OCR outputs. Dataset provenance and mapped label coverage determine the supported claims.'}
     (output/'training_run.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
     print(json.dumps(metadata,indent=2),flush=True)
     if not args.evaluate_only:

@@ -9,3 +9,5 @@ Model and dataset terms are separate from the application's source. This reposit
 - Tesseract, pdfplumber, PyTorch, Transformers and other dependencies retain their respective licenses.
 
 No blanket open-source license has been assigned to the team's original application code in this preparation step. The project owners can add their chosen source license separately; third-party model/data terms still apply.
+
+Three real CORD-v2 training-split receipt JPEG derivatives are redistributed under CC-BY-4.0 in `sample_docs/real_receipts`; attribution, license text, source indices and hashes are included there. Copyright and dataset attribution remain with the original authors/Clova AI/NAVER.

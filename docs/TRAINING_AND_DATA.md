@@ -156,3 +156,7 @@ LayoutLMv3's [model card](https://huggingface.co/microsoft/layoutlmv3-base) spec
 ## Operating-mode validation
 
 A higher renderer-token BIO F1 did not make the combined pipeline outperform OCR rules. On the same 20 validation documents, OCR field F1 was 0.923 and combined mode was 0.732. OCR was selected as the recommended mode, then evaluated without tuning on a separate 20-document test slice (offset 50): field F1 0.953 and field accuracy 0.932. The earlier ten-document diagnostic comparison motivated checking operating modes and should not be described as an untouched mode-selection test. No extraction rules or model weights were changed for this choice. The trained model remains available for research and a separately verified live GPU demonstration.
+
+## Real CORD receipt pilot
+
+The corrected real-data importer, 60-image subset, actual OCR evaluation and completed separate classifier-head training pilot are documented in [the real-data guide](REAL_DATA.md). Use that guide instead of the legacy six-image CORD import for new experiments.

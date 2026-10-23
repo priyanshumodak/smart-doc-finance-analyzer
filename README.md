@@ -92,3 +92,7 @@ Follow the [complete deployment and visitor walkthrough](docs/DEPLOYMENT_WALKTHR
 Use the root **`streamlit_app.py`** entrypoint with **Python 3.11**. This runs the complete OCR pipeline inside Streamlit, without a separate backend server or model download. Upload, samples, corrections, revalidation and downloads remain available with isolated visitor histories.
 
 See [exact Streamlit Cloud deployment steps](docs/STREAMLIT_CLOUD.md). Root `requirements.txt`, `packages.txt` and `.streamlit/config.toml` provide the cloud dependencies and five-megabyte upload limit.
+
+## Real receipt datasets and images
+
+The app now includes **Try real receipt images (CORD)** with three licensed real receipt photographs, OCR, published-value comparison and normal review/download controls. A separate 60-image real-data subset has been validated and evaluated, and a small real-data GPU training pilot is complete. Read [real-data setup and honest results](docs/REAL_DATA.md); these Indonesian receipts are a different domain from Indian GST invoices.
